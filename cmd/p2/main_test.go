@@ -92,6 +92,35 @@ func TestRunClosestArg(t *testing.T) {
 	}
 }
 
+func TestRunClosestArgAcceptsCommaSeparatedInput(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	var copied string
+	deps := testDeps(config.Default())
+	deps.copy = func(value string) error {
+		copied = value
+		return nil
+	}
+
+	exitCode := runWithDeps([]string{"30,000"}, bytes.NewBuffer(nil), &stdout, &stderr, deps)
+	if exitCode != 0 {
+		t.Fatalf("run() exit code = %d, want 0", exitCode)
+	}
+
+	if stdout.String() != "2^15 = 32,768\n" {
+		t.Fatalf("stdout = %q, want %q", stdout.String(), "2^15 = 32,768\n")
+	}
+
+	if stderr.Len() != 0 {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+
+	if copied != "32768" {
+		t.Fatalf("copied value = %q, want %q", copied, "32768")
+	}
+}
+
 func TestRunTieArg(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -318,6 +347,45 @@ func TestDefaultConfigUpperBound(t *testing.T) {
 	}
 }
 
+func TestParseIntegerArg(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name  string
+		input string
+		want  string
+		ok    bool
+	}{
+		{name: "plain", input: "30000", want: "30000", ok: true},
+		{name: "comma separated", input: "30,000", want: "30000", ok: true},
+		{name: "signed comma separated", input: "-30,000", want: "-30000", ok: true},
+		{name: "single group", input: "999", want: "999", ok: true},
+		{name: "bad grouping short", input: "3,00", ok: false},
+		{name: "bad grouping double comma", input: "30,,000", ok: false},
+		{name: "bad grouping leading comma", input: ",30000", ok: false},
+		{name: "bad grouping trailing comma", input: "30,000,", ok: false},
+		{name: "bad characters", input: "30,00a", ok: false},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := parseIntegerArg(tc.input)
+			if ok != tc.ok {
+				t.Fatalf("parseIntegerArg(%q) ok = %v, want %v", tc.input, ok, tc.ok)
+			}
+
+			if !tc.ok {
+				return
+			}
+
+			if got.String() != tc.want {
+				t.Fatalf("parseIntegerArg(%q) = %q, want %q", tc.input, got.String(), tc.want)
+			}
+		})
+	}
+}
+
 func TestRunInvalidInput(t *testing.T) {
 	t.Parallel()
 
@@ -326,9 +394,11 @@ func TestRunInvalidInput(t *testing.T) {
 		args []string
 	}{
 		{name: "negative", args: []string{"-1"}},
+		{name: "negative with commas", args: []string{"-30,000"}},
 		{name: "decimal", args: []string{"5.5"}},
 		{name: "nonnumeric", args: []string{"hello"}},
 		{name: "unknown flag", args: []string{"--nope"}},
+		{name: "bad comma grouping", args: []string{"3,00"}},
 		{name: "extra args", args: []string{"1", "2"}},
 	}
 

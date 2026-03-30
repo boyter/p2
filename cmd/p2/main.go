@@ -67,9 +67,9 @@ func runWithDeps(args []string, stdin io.Reader, stdout io.Writer, stderr io.Wri
 		return 0
 	}
 
-	input, ok := new(big.Int).SetString(args[0], 10)
+	input, ok := parseIntegerArg(args[0])
 	if !ok {
-		if strings.HasPrefix(args[0], "-") {
+		if looksLikeFlag(args[0]) {
 			return usageError(stderr, fmt.Sprintf("unknown flag %q", args[0]), deps.configPath())
 		}
 
@@ -280,4 +280,79 @@ func readPromptLine(reader *bufio.Reader) (string, error) {
 	}
 
 	return strings.TrimSpace(line), err
+}
+
+func parseIntegerArg(raw string) (*big.Int, bool) {
+	normalized, ok := normalizeIntegerArg(raw)
+	if !ok {
+		return nil, false
+	}
+
+	input, ok := new(big.Int).SetString(normalized, 10)
+	if !ok {
+		return nil, false
+	}
+
+	return input, true
+}
+
+func normalizeIntegerArg(raw string) (string, bool) {
+	if raw == "" {
+		return "", false
+	}
+
+	sign := ""
+	digits := raw
+	if raw[0] == '+' || raw[0] == '-' {
+		sign = raw[:1]
+		digits = raw[1:]
+	}
+
+	if digits == "" {
+		return "", false
+	}
+
+	if !strings.Contains(digits, ",") {
+		if isDigits(digits) {
+			return sign + digits, true
+		}
+		return "", false
+	}
+
+	groups := strings.Split(digits, ",")
+	if len(groups) == 0 || len(groups[0]) == 0 || len(groups[0]) > 3 || !isDigits(groups[0]) {
+		return "", false
+	}
+
+	var builder strings.Builder
+	builder.Grow(len(raw))
+	builder.WriteString(sign)
+	builder.WriteString(groups[0])
+
+	for _, group := range groups[1:] {
+		if len(group) != 3 || !isDigits(group) {
+			return "", false
+		}
+		builder.WriteString(group)
+	}
+
+	return builder.String(), true
+}
+
+func looksLikeFlag(raw string) bool {
+	return strings.HasPrefix(raw, "-") && (len(raw) < 2 || raw[1] < '0' || raw[1] > '9')
+}
+
+func isDigits(value string) bool {
+	if value == "" {
+		return false
+	}
+
+	for _, char := range value {
+		if char < '0' || char > '9' {
+			return false
+		}
+	}
+
+	return true
 }

@@ -10,6 +10,7 @@
 - `p2` prints the default list from `2^0` to `2^16`
 - `p2 5` prints `2^5 = 32`
 - `p2 30000` finds the closest supported power of 2 and prints `2^15 = 32,768`
+- `p2 30,000` works too
 - Exact midpoint ties return both matches on separate lines, for example `p2 48` prints `2^5 = 32` and `2^6 = 64`
 - By default, single-result lookups also copy the raw numeric value to your clipboard
 - Optional user config controls list bounds, comma formatting, and clipboard copy for single-result lookups
