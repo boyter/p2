@@ -3,6 +3,7 @@ package powers
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 )
 
@@ -23,6 +24,22 @@ var (
 func All() []Entry {
 	out := make([]Entry, len(entries))
 	copy(out, entries)
+	return out
+}
+
+func Between(lower, upper int) []Entry {
+	if lower < 0 {
+		lower = 0
+	}
+	if upper > int(MaxExponent) {
+		upper = int(MaxExponent)
+	}
+	if lower > upper {
+		return nil
+	}
+
+	out := make([]Entry, upper-lower+1)
+	copy(out, entries[lower:upper+1])
 	return out
 }
 
@@ -68,21 +85,33 @@ func ClosestTo(target *big.Int) []Entry {
 	return []Entry{maxEntry}
 }
 
-func FormatEntries(items []Entry) string {
+func FormatEntries(items []Entry, useCommas bool) string {
 	parts := make([]string, 0, len(items))
 	for _, item := range items {
-		parts = append(parts, FormatEntry(item))
+		parts = append(parts, FormatEntry(item, useCommas))
 	}
 
 	return strings.Join(parts, ", ")
 }
 
-func FormatEntry(item Entry) string {
-	return fmt.Sprintf("%d (%s)", item.Exponent, FormatUint(item.Value))
+func FormatEntry(item Entry, useCommas bool) string {
+	return fmt.Sprintf("%d (%s)", item.Exponent, FormatUint(item.Value, useCommas))
 }
 
-func FormatUint(value uint64) string {
-	digits := fmt.Sprintf("%d", value)
+func FormatUint(value uint64, useCommas bool) string {
+	digits := strconv.FormatUint(value, 10)
+	if !useCommas || len(digits) <= 3 {
+		return digits
+	}
+
+	return formatUintWithCommas(digits)
+}
+
+func RawUint(value uint64) string {
+	return strconv.FormatUint(value, 10)
+}
+
+func formatUintWithCommas(digits string) string {
 	if len(digits) <= 3 {
 		return digits
 	}

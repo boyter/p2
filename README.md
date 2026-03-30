@@ -11,6 +11,9 @@
 - `p2 5` prints `5 (32)`
 - `p2 30000` finds the closest supported power of 2 and prints `15 (32,768)`
 - Exact midpoint ties return both matches, for example `p2 48` prints `5 (32), 6 (64)`
+- Optional user config controls list bounds, comma formatting, and clipboard copy for single-result lookups
+- `p2 --config` walks you through a simple interactive setup
+- `p2 --reset` restores a clean default config file
 
 ## Install
 
@@ -39,7 +42,36 @@ p2
 p2 5
 p2 30000
 p2 48
+p2 --help
+p2 --config
+p2 --reset
 ```
+
+## Config
+
+`p2` reads an optional user config file from your platform config directory:
+
+- macOS: `~/Library/Application Support/p2/config.json`
+- Linux: `~/.config/p2/config.json`
+- Windows: `%AppData%\p2\config.json`
+
+Example:
+
+```json
+{
+  "lower_bound": 5,
+  "upper_bound": 8,
+  "use_commas": true,
+  "copy_single_to_clipboard": true
+}
+```
+
+Notes:
+
+- `lower_bound` and `upper_bound` affect bare `p2` only
+- `use_commas` changes display formatting only
+- single-result lookups copy the raw numeric value without commas
+- the config file is created when you run `p2 --config` or `p2 --reset`
 
 ## Development
 

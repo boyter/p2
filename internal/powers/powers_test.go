@@ -37,7 +37,7 @@ func TestByExponent(t *testing.T) {
 
 	for _, tc := range testCases {
 		tc := tc
-		t.Run(FormatUint(uint64(tc.exponent)), func(t *testing.T) {
+		t.Run(RawUint(uint64(tc.exponent)), func(t *testing.T) {
 			got, ok := ByExponent(tc.exponent)
 			if !ok {
 				t.Fatalf("ByExponent(%d) returned ok = false", tc.exponent)
@@ -62,22 +62,46 @@ func TestFormatUint(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		value uint64
-		want  string
+		value     uint64
+		useCommas bool
+		want      string
 	}{
-		{value: 1, want: "1"},
-		{value: 1024, want: "1,024"},
-		{value: 32768, want: "32,768"},
-		{value: 4294967296, want: "4,294,967,296"},
+		{value: 1, useCommas: true, want: "1"},
+		{value: 1024, useCommas: true, want: "1,024"},
+		{value: 32768, useCommas: true, want: "32,768"},
+		{value: 4294967296, useCommas: true, want: "4,294,967,296"},
+		{value: 32768, useCommas: false, want: "32768"},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.want, func(t *testing.T) {
-			if got := FormatUint(tc.value); got != tc.want {
+			if got := FormatUint(tc.value, tc.useCommas); got != tc.want {
 				t.Fatalf("FormatUint(%d) = %q, want %q", tc.value, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestBetween(t *testing.T) {
+	t.Parallel()
+
+	got := Between(5, 8)
+	want := []Entry{
+		{Exponent: 5, Value: 32},
+		{Exponent: 6, Value: 64},
+		{Exponent: 7, Value: 128},
+		{Exponent: 8, Value: 256},
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("Between() returned %d entries, want %d", len(got), len(want))
+	}
+
+	for idx := range got {
+		if got[idx] != want[idx] {
+			t.Fatalf("Between()[%d] = %#v, want %#v", idx, got[idx], want[idx])
+		}
 	}
 }
 
