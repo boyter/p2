@@ -23,7 +23,7 @@ Install into `~/.local/bin`:
 ./install.sh
 ```
 
-The install script only installs the binary. It does not create a config file.
+This install path builds `p2` from source, so it requires Go to be installed locally.
 
 Install into a custom location:
 
